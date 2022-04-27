@@ -1,4 +1,4 @@
-package practice.excel;
+package practice.excel.excel;
 
 import java.io.FileInputStream;
 import java.sql.Connection;
@@ -14,11 +14,12 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONObject;
 
-public class _02_ExcelParsingTest01 {
+public class _03_ExcelDBInsertTest01 {
 
 	public static void main(String[] args) throws Exception {
 
-		String[] headers = { "examYear", "month", "organization", "wrongCount" };
+		//String[] headers = { "examYear", "month", "organization", "wrongCount" };
+		String[] headers = { "examYear", "month", "organization", "number", "wrongCount" };
 
 		String filePath = "C:\\Users\\pine\\Desktop\\OT\\4월2주\\1_smart_city\\excel\\[2016_2022생명과학1_화학1]오답_통계.xlsx";
 		FileInputStream file = new FileInputStream(filePath);
@@ -51,11 +52,11 @@ public class _02_ExcelParsingTest01 {
 
 					XSSFCell cell = row.getCell(cellIndex);
 
-					if (cell == null) { // 빈 셀 체크
+					if (cell == null) { 
 						continue;
 					} else {
 
-						// 타입 별로 내용을 읽는다.
+						
 						String value = "";
 
 						switch (cell.getCellType()) {
@@ -82,14 +83,59 @@ public class _02_ExcelParsingTest01 {
 						jobj.put(headers[cellIndex], value);
 					}
 
-				} // end of for cellIndex
+				} 
 
-				System.out.println(jobj);
 				parsedData.add(jobj);
 
-			} // end of for rowIndex
+			} 
 
-			System.out.println(parsedData);
+		}
+
+		String driverName = "org.postgresql.Driver";
+		String connectionUrl = "jdbc:postgresql://192.168.1.162:5432/postgres";
+		String user = "postgres";
+		String password = "0000";
+
+		Connection conn = null;
+		PreparedStatement psmt = null;
+
+		try {
+			Class.forName(driverName);
+			conn = DriverManager.getConnection(connectionUrl, user, password);
+			
+			String sql = "INSERT INTO sc.exam_statistics(exam_year, exam_month, organization, problem_number, wrong_count) "
+					+ " VALUES(?, ?, ?, ?, ?) ";
+	
+			psmt = conn.prepareStatement(sql);
+
+			int insertedCount = 0;
+
+			for(int i = 0 ; i < parsedData.size() ; i++) {
+			
+			JSONObject tmpObj = parsedData.get(i);
+			
+			psmt.setString(1, tmpObj.getString("examYear"));
+			psmt.setString(2, tmpObj.getString("month"));
+			psmt.setString(3, tmpObj.getString("organization"));
+			psmt.setString(4, tmpObj.getString("number"));
+			psmt.setString(5, tmpObj.getString("wrongCount"));
+	
+			insertedCount += psmt.executeUpdate();
+		}
+		
+		System.out.println("insertedCount : " + insertedCount);
+		
+			
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			
+		}finally {
+			if(psmt != null) {psmt.close();}
+			if(conn != null) {conn.close();}
 		}
 
 	}
